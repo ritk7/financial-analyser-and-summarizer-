@@ -1,0 +1,132 @@
+/* Main styles for Financial Analyzer */
+
+/* Custom colors */
+:root {
+    --primary-bg: #f8f9fa;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    background-color: var(--primary-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Card styling */
+.card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    font-weight: 600;
+}
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Summary cards */
+#summary-cards .card {
+    text-align: center;
+    padding: 10px;
+}
+
+#summary-cards .card-title {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+#summary-cards .card-text {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+/* Table styling */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+/* Make dashboard responsive */
+@media (max-width: 768px) {
+    #summary-cards .card {
+        margin-bottom: 15px;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+}
+
+/* Login and Register pages */
+.login-container, .register-container {
+    max-width: 450px;
+    margin: 50px auto;
+}
+
+/* Upload page */
+.upload-container {
+    max-width: 650px;
+    margin: 30px auto;
+}
+
+/* Custom badges */
+.badge {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* Navbar styling */
+.navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Loading animation */
+.loading {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #007bff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Alert messages */
+.alert {
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

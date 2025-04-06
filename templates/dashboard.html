@@ -474,105 +474,108 @@
 
             // Load heatmap data
             fetch('/api/heatmap')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        const dates = data.map(item => item.date);
-                        const amounts = data.map(item => item.amount);
-                        
-                        // Group by month for better visualization
-                        const monthlyData = {};
-                        
-                        for (let i = 0; i < dates.length; i++) {
-                            const date = dates[i];
-                            const month = date.substring(0, 7); // YYYY-MM
-                            if (!monthlyData[month]) {
-                                monthlyData[month] = {
-                                    dates: [],
-                                    amounts: []
-                                };
-                            }
-                            
-                            monthlyData[month].dates.push(date);
-                            monthlyData[month].amounts.push(amounts[i]);
-                        }
-                        
-                        const months = Object.keys(monthlyData).sort();
-                        const datasets = months.map((month, index) => {
-                            return {
-                                label: month,
-                                data: monthlyData[month].dates.map((date, i) => ({
-                                    x: date,
-                                    y: monthlyData[month].amounts[i]
-                                })),
-                                backgroundColor: categoryColors[index % categoryColors.length],
-                                borderColor: 'rgba(255, 255, 255, 0.2)',
-                                borderWidth: 1,
-                                borderRadius: 4
-                            };
-                        });
-                        
-                        const ctx = document.getElementById('heatmap-chart').getContext('2d');
-                        new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                datasets: datasets
+            .then(response => response.json())
+            .then(data => {
+        console.log("Heatmap data:", data);
+        if (data.length === 0) {
+            const chartContainer = document.getElementById('heatmap-chart').parentElement;
+            chartContainer.innerHTML = '<div class="alert alert-info m-3">No daily spending data available yet</div>';
+            return;
+        }
+        
+        // Sort by date
+        data.sort((a, b) => a.date.localeCompare(b.date));
+        
+        // Prepare data for bar chart
+        const dates = [];
+        const amounts = [];
+        
+        data.forEach(item => {
+            // Format date more nicely for display
+            const date = new Date(item.date);
+            const formattedDate = date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric'
+            });
+            
+            dates.push(formattedDate);
+            amounts.push(item.amount);
+        });
+        
+        // Create color gradient based on amount
+        const maxAmount = Math.max(...amounts);
+        const colors = amounts.map(amount => {
+            const intensity = amount / maxAmount;
+            return `rgba(42, 207, 207, ${intensity.toFixed(2)})`;
+        });
+        
+        const ctx = document.getElementById('heatmap-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Daily Spending',
+                    data: amounts,
+                    backgroundColor: colors,
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    barThickness: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
                             },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    x: {
-                                        type: 'time',
-                                        time: {
-                                            unit: 'month',
-                                            tooltipFormat: 'MMM YYYY'
-                                        },
-                                        grid: {
-                                            display: false
-                                        },
-                                        title: {
-                                            display: false
-                                        }
-                                    },
-                                    y: {
-                                        beginAtZero: true,
-                                        grid: {
-                                            drawBorder: false,
-                                            color: 'rgba(0, 0, 0, 0.05)'
-                                        },
-                                        ticks: {
-                                            font: {
-                                                size: 11
-                                            },
-                                            callback: function(value) {
-                                                return formatCurrency(value);
-                                            }
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    tooltip: {
-                                        callbacks: {
-                                            label: function(context) {
-                                                let label = context.dataset.label || '';
-                                                if (label) {
-                                                    label += ': ';
-                                                }
-                                                label += formatCurrency(context.raw.y);
-                                                return label;
-                                            }
-                                        }
-                                    },
-                                    legend: {
-                                        display: false
-                                    }
-                                }
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            callback: function(value) {
+                                return formatCurrency(value);
                             }
-                        });
+                        }
                     }
-                })
-                .catch(error => console.error('Error loading heatmap data:', error));
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return formatCurrency(context.raw);
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error loading heatmap data:', error);
+                const chartContainer = document.getElementById('heatmap-chart').parentElement;
+                chartContainer.innerHTML = '<div class="alert alert-danger m-3">Error loading daily spending data</div>';
+            });
 
             // Load projections data
             fetch('/api/projections')

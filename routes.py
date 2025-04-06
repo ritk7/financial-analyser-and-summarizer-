@@ -38,7 +38,7 @@ def init_routes(app):
     
     @app.route('/about')
     def about():
-        return render_template('about.html')
+        return render_template('aboutus.html')
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -89,7 +89,7 @@ def init_routes(app):
     @login_required
     def logout():
         logout_user()
-        return redirect(url_for('login'))
+        return redirect(url_for('index'))
     
     @app.route('/dashboard')
     @login_required

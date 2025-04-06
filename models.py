@@ -27,19 +27,19 @@ class User(UserMixin):
         if user_data:
             return User(*user_data)
         return None    
-
+    
     @staticmethod
-    def get_by_identifier(identifier):
-        """Retrieve a user by username or email."""
+    def get_by_username(username):
+        """Retrieve a user by username."""
         conn = sqlite3.connect('financial_analyzer.db')
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, email, password_hash, name FROM users WHERE username = ? OR email = ?", (identifier, identifier))
+        cursor.execute("SELECT id, name, username, email, password_hash FROM users WHERE username = ?", (username,))
         user_data = cursor.fetchone()
         conn.close()
         if user_data:
             return User(*user_data)
         return None
-    
+
     @classmethod
     def create_user(cls, name, username, email, password):
         password_hash = generate_password_hash(password)

@@ -38,19 +38,18 @@ def init_routes(app):
     
     @app.route('/about')
     def about():
-        return render_template('aboutus.html')
+        return render_template('about.html')
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated:
-            return redirect(url_for('home'))
+            return redirect(url_for('index'))
         
         if request.method == 'POST':
-            identifier = request.form.get('identifier')  # Can be username or email
+            username = request.form.get('username') 
             password = request.form.get('password')
             
-            # Modify get_by_identifier to fetch user by username or email
-            user = User.get_by_identifier(identifier)
+            user = User.get_by_username(username)
             if user and user.check_password(password):
                 login_user(user)
                 next_page = request.args.get('next')
@@ -71,12 +70,8 @@ def init_routes(app):
             email = request.form.get('email')
             password = request.form.get('password')
             
-            if User.get_by_identifier(username):
+            if User.get_by_username(username):
                 flash('Username already exists')
-                return render_template('register.html')
-            
-            if User.get_by_identifier(email):
-                flash('Email already exists')
                 return render_template('register.html')
             
             user = User.create_user(name, username, email, password)
@@ -89,7 +84,7 @@ def init_routes(app):
     @login_required
     def logout():
         logout_user()
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
     
     @app.route('/dashboard')
     @login_required
@@ -207,14 +202,24 @@ def init_routes(app):
     @app.route('/api/heatmap')
     @login_required
     def get_heatmap():
-        # Get all transactions for the current user
-        transactions = Transaction.get_user_transactions(current_user.id)
-        
-        # Analyze transactions
-        analyzer = FinancialAnalyzer(transactions)
-        heatmap = analyzer.get_daily_heatmap()
-        
-        return jsonify(heatmap)
+        try:
+            # Get all transactions for the current user
+            transactions = Transaction.get_user_transactions(current_user.id)
+            
+            # Log the number of transactions
+            print(f"Retrieved {len(transactions)} transactions for heatmap")
+            
+            # Analyze transactions
+            analyzer = FinancialAnalyzer(transactions)
+            heatmap = analyzer.get_daily_heatmap()
+            
+            # Log the heatmap data
+            print(f"Generated heatmap with {len(heatmap)} data points")
+            
+            return jsonify(heatmap)
+        except Exception as e:
+            print(f"Error in heatmap endpoint: {str(e)}")
+            return jsonify({"error": str(e)}), 500
     
     @app.route('/api/anomalies')
     @login_required

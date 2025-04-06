@@ -231,9 +231,12 @@ class FinancialAnalyzer:
         if self.df.empty:
             return {}
         
+        # Get the current date/time
         today = datetime.now()
+        
+        # Calculate days in month and days remaining
         days_in_month = (datetime(today.year, today.month + 1 if today.month < 12 else 1, 1) - 
-                         datetime(today.year, today.month, 1)).days
+                        datetime(today.year, today.month, 1)).days
         days_elapsed = today.day
         days_remaining = days_in_month - days_elapsed
         
@@ -268,14 +271,14 @@ class FinancialAnalyzer:
             if not prev_df.empty:
                 prev_month_spent = prev_df['amount'].sum()
             
-            # Determine if category might overshoot
+            # Determine if category might overshoot - convert to string instead of boolean
             is_overshoot = projected_amount > (prev_month_spent * 1.2) if prev_month_spent > 0 else False
             
             projections[category] = {
                 'current_spent': round(amount, 2),
                 'projected_amount': round(projected_amount, 2),
                 'previous_month': round(prev_month_spent, 2),
-                'possible_overshoot': is_overshoot
+                'possible_overshoot': int(is_overshoot)  # Convert boolean to integer (0 or 1)
             }
         
         # Add overall projection
@@ -289,11 +292,13 @@ class FinancialAnalyzer:
             (self.df['type'] == 'debit')
         ]['amount'].sum()
         
+        total_overshoot = total_projected > (prev_month_total * 1.1) if prev_month_total > 0 else False
+        
         projections['total'] = {
             'current_spent': round(total_spent, 2),
             'projected_amount': round(total_projected, 2),
             'previous_month': round(prev_month_total, 2),
-            'possible_overshoot': total_projected > (prev_month_total * 1.1) if prev_month_total > 0 else False
+            'possible_overshoot': int(total_overshoot)  # Convert boolean to integer (0 or 1)
         }
         
         return projections

@@ -26,16 +26,24 @@ def init_routes(app):
     # Ensure the upload folder exists
     os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
     
+    # @app.route('/')
+    # def index():
+    #     if current_user.is_authenticated:
+    #         return redirect(url_for('dashboard'))
+    #     return redirect(url_for('login'))
+
     @app.route('/')
     def index():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-        return redirect(url_for('login'))
+        return render_template('index.html')
+    
+    @app.route('/about')
+    def about():
+        return render_template('about.html')
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('home'))
         
         if request.method == 'POST':
             identifier = request.form.get('identifier')  # Can be username or email
@@ -46,7 +54,7 @@ def init_routes(app):
             if user and user.check_password(password):
                 login_user(user)
                 next_page = request.args.get('next')
-                return redirect(next_page or url_for('dashboard'))
+                return redirect(next_page or url_for('index'))
             
             flash('Invalid username/email or password')
         
@@ -55,7 +63,7 @@ def init_routes(app):
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('index'))
         
         if request.method == 'POST':
             name = request.form.get('name')

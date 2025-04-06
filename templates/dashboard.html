@@ -10,159 +10,263 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0/dist/chartjs-adapter-moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Financial Analyzer</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('dashboard') }}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('upload') }}">Upload Statement</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('generate_report') }}">Generate Report</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-                    </li>
-                </ul>
+<body class="min-h-screen">
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <i class="bi bi-bar-chart-fill fs-3"></i>
+            </div>
+            
+            <!-- Update the sidebar to only include Dashboard, Upload, and Reports -->
+            <div class="sidebar-menu">
+                <a href="{{ url_for('dashboard') }}" class="menu-item active">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('upload') }}" class="menu-item">
+                    <i class="bi bi-cloud-upload"></i>
+                    <span>Upload</span>
+                </a>
+                <a href="{{ url_for('generate_report') }}" class="menu-item">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Reports</span>
+                </a>
             </div>
         </div>
-    </nav>
+        
+        <!-- Main Content -->
+        <div class="main-content flex-grow-1">
+            <div class="header">
+                <div>
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="date-display">{{ now.strftime('%d %b %Y') if now else 'Today' }}</p>
+                </div>
+                
+                <div class="header-actions">
+                    <div class="dropdown">
+                        <div class="user-avatar d-flex" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle fs-4"></i>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><span class="dropdown-item-text fw-medium">{{ session.get('username', 'User') }}</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success mb-4" role="alert">
+                            <i class="bi bi-check-circle"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-    <div class="container-fluid mt-4">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <!-- Summary Cards -->
-        <div class="row mb-4" id="summary-cards">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Transactions</h5>
-                        <h2 class="card-text" id="total-transactions">--</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Credit
-                        <h2 class="card-text" id="total-credit">--</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-danger text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Expenses</h5>
-                        <h2 class="card-text" id="total-debit">--</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Net Cash Flow</h5>
-                        <h2 class="card-text" id="net-cashflow">--</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- No Data Alert -->
-        <div class="row mb-4" id="no-data-alert" style="display: none;">
-            <div class="col-12">
+            <!-- No Data Alert -->
+            <div class="mb-4" id="no-data-alert" style="display: none;">
                 <div class="alert alert-warning">
-                    <h4><i class="bi bi-exclamation-triangle"></i> No transaction data available</h4>
-                    <p>Please upload your bank statement to see insights and analysis.</p>
-                    <a href="{{ url_for('upload') }}" class="btn btn-primary">Upload Bank Statement</a>
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div>
+                        <h6 class="fw-medium mb-1">No transaction data available</h6>
+                        <p class="mb-0 small">Please upload your bank statement to see insights and analysis.</p>
+                    </div>
+                    <a href="{{ url_for('upload') }}" class="btn btn-primary ms-auto">Upload Statement</a>
                 </div>
             </div>
-        </div>
 
-        <!-- Main Dashboard Content -->
-        <div class="row" id="dashboard-content">
-            <!-- Category Breakdown -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Spending by Category</h5>
+            <!-- Summary Cards -->
+            <div class="row g-4 mb-4" id="summary-cards">
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card primary">
+                        <div class="stat-title">
+                            <i class="bi bi-cash-stack"></i>
+                            Total Credit
+                        </div>
+                        <div class="stat-value" id="total-transactions">--</div>
+                        <div class="stat-subtitle">From the current month</div>
                     </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="category-chart"></canvas>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card secondary">
+                        <div class="stat-title">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            Total Income
+                        </div>
+                        <div class="stat-value" id="total-credit">--</div>
+                        <div class="stat-subtitle">Daily average of the month</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card danger">
+                        <div class="stat-title">
+                            <i class="bi bi-graph-down-arrow"></i>
+                            Total Expenses
+                        </div>
+                        <div class="stat-value" id="total-debit">--</div>
+                        <div class="stat-subtitle">+0.5% growth from last month</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="stat-card warning">
+                        <div class="stat-title">
+                            <i class="bi bi-wallet2"></i>
+                            Net Cash Flow
+                        </div>
+                        <div class="stat-value" id="net-cashflow">--</div>
+                        <div class="stat-subtitle">Overall balance this month</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Content -->
+            <div class="row g-4" id="dashboard-content">
+                <!-- Category Breakdown -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-pie-chart-fill"></i>
+                                Spending by Category
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="category-chart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Monthly Trend -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Monthly Spending Trend</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="monthly-chart"></canvas>
+                <!-- Monthly Trend -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-graph-up"></i>
+                                Monthly Spending Trend
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="monthly-chart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Daily Spending Heatmap -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Daily Spending Heatmap</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="heatmap-chart"></canvas>
+                <!-- Budget Projection -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-bar-chart-steps"></i>
+                                Monthly Budget Projection
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="projection-container">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Category</th>
+                                                <th>Current</th>
+                                                <th>Projected</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="projection-table">
+                                            <!-- Projection data will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Budget Projection -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Monthly Budget Projection</h5>
+                <!-- Daily Spending Heatmap -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-calendar-week"></i>
+                                Daily Spending Heatmap
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="heatmap-chart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div id="projection-container">
+                </div>
+
+                <!-- Recurring Transactions -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-arrow-repeat"></i>
+                                Recurring Transactions
+                            </h5>
+                        </div>
+                        <div class="card-body p-0 scrollable-card-body">
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
+                                            <th>Description</th>
+                                            <th>Amount</th>
                                             <th>Category</th>
-                                            <th>Current</th>
-                                            <th>Projected</th>
-                                            <th>Status</th>
+                                            <th>Last Date</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="projection-table">
-                                        <!-- Projection data will be loaded here -->
+                                    <tbody id="recurring-table">
+                                        <!-- Recurring transactions will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anomalies -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Unusual Transactions
+                            </h5>
+                        </div>
+                        <div class="card-body p-0 scrollable-card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th>Amount</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="anomalies-table">
+                                        <!-- Anomalies will be loaded here -->
                                     </tbody>
                                 </table>
                             </div>
@@ -170,60 +274,13 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Anomalies -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Unusual Transactions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Description</th>
-                                        <th>Amount</th>
-                                        <th>Category</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="anomalies-table">
-                                    <!-- Anomalies will be loaded here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recurring Transactions -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Recurring Transactions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Description</th>
-                                        <th>Amount</th>
-                                        <th>Category</th>
-                                        <th>Last Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="recurring-table">
-                                    <!-- Recurring transactions will be loaded here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
+
+    <!-- Floating AI Chatbot Button -->
+    <button class="chatbot-button">
+        <i class="bi bi-chat-dots-fill"></i>
+    </button>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -236,15 +293,24 @@
             }).format(amount);
         }
 
-        // Colors for categories
+        // Colors for categories 
         const categoryColors = [
-            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-            '#FF9F40', '#8AC249', '#EA5545', '#F46A9B', '#EF9B20',
-            '#EDBF33', '#87BC45', '#27AEEF', '#B33DC6'
+            '#2ACFCF', '#1ABEBE', '#0AADAD', '#00999C', '#00858A',
+            '#5EEAD4', '#2DD4BF', '#14B8A6', '#0D9488', '#0F766E',
+            '#FF6B6B', '#FF5252', '#FF3838', '#FF1F1F', '#FF0505',
+            '#FFB84D', '#F59E0B', '#D97706', '#B45309', '#92400E'
         ];
 
         // Load dashboard data
         document.addEventListener('DOMContentLoaded', function() {
+            // Set current date
+            const now = new Date();
+            document.querySelector('.date-display').textContent = now.toLocaleDateString('en-US', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+            
             // Load basic stats
             fetch('/api/stats')
                 .then(response => response.json())
@@ -274,20 +340,29 @@
                         
                         const ctx = document.getElementById('category-chart').getContext('2d');
                         new Chart(ctx, {
-                            type: 'pie',
+                            type: 'doughnut',
                             data: {
                                 labels: labels,
                                 datasets: [{
                                     data: values,
                                     backgroundColor: categoryColors.slice(0, labels.length),
-                                    borderWidth: 1
+                                    borderWidth: 1,
+                                    borderColor: '#ffffff'
                                 }]
                             },
                             options: {
                                 responsive: true,
+                                maintainAspectRatio: false,
                                 plugins: {
                                     legend: {
                                         position: 'right',
+                                        labels: {
+                                            boxWidth: 12,
+                                            padding: 15,
+                                            font: {
+                                                size: 11
+                                            }
+                                        }
                                     },
                                     tooltip: {
                                         callbacks: {
@@ -301,7 +376,8 @@
                                             }
                                         }
                                     }
-                                }
+                                },
+                                cutout: '70%'
                             }
                         });
                     }
@@ -324,21 +400,44 @@
                                 datasets: [{
                                     label: 'Monthly Spending',
                                     data: values,
-                                    borderColor: '#36A2EB',
-                                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                    borderColor: '#2ACFCF',
+                                    backgroundColor: 'rgba(42, 207, 207, 0.1)',
                                     borderWidth: 2,
                                     fill: true,
-                                    tension: 0.1
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#2ACFCF',
+                                    pointBorderColor: '#ffffff',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
                                 }]
                             },
                             options: {
                                 responsive: true,
+                                maintainAspectRatio: false,
                                 scales: {
                                     y: {
                                         beginAtZero: true,
+                                        grid: {
+                                            drawBorder: false,
+                                            color: 'rgba(0, 0, 0, 0.05)'
+                                        },
                                         ticks: {
+                                            font: {
+                                                size: 11
+                                            },
                                             callback: function(value) {
                                                 return formatCurrency(value);
+                                            }
+                                        }
+                                    },
+                                    x: {
+                                        grid: {
+                                            display: false
+                                        },
+                                        ticks: {
+                                            font: {
+                                                size: 11
                                             }
                                         }
                                     }
@@ -397,8 +496,9 @@
                                     y: monthlyData[month].amounts[i]
                                 })),
                                 backgroundColor: categoryColors[index % categoryColors.length],
-                                borderColor: 'rgba(0, 0, 0, 0.1)',
-                                borderWidth: 1
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                borderRadius: 4
                             };
                         });
                         
@@ -410,25 +510,31 @@
                             },
                             options: {
                                 responsive: true,
+                                maintainAspectRatio: false,
                                 scales: {
                                     x: {
                                         type: 'time',
                                         time: {
-                                            unit: 'day',
-                                            tooltipFormat: 'MMM D, YYYY'
+                                            unit: 'month',
+                                            tooltipFormat: 'MMM YYYY'
+                                        },
+                                        grid: {
+                                            display: false
                                         },
                                         title: {
-                                            display: true,
-                                            text: 'Date'
+                                            display: false
                                         }
                                     },
                                     y: {
                                         beginAtZero: true,
-                                        title: {
-                                            display: true,
-                                            text: 'Spending Amount'
+                                        grid: {
+                                            drawBorder: false,
+                                            color: 'rgba(0, 0, 0, 0.05)'
                                         },
                                         ticks: {
+                                            font: {
+                                                size: 11
+                                            },
                                             callback: function(value) {
                                                 return formatCurrency(value);
                                             }
@@ -491,9 +597,9 @@
                         // Status
                         const tdStatus = document.createElement('td');
                         if (values.possible_overshoot) {
-                            tdStatus.innerHTML = '<span class="badge bg-danger">Overshoot Risk</span>';
+                            tdStatus.innerHTML = '<span class="badge badge-error">Overshoot Risk</span>';
                         } else {
-                            tdStatus.innerHTML = '<span class="badge bg-success">On Track</span>';
+                            tdStatus.innerHTML = '<span class="badge badge-success">On Track</span>';
                         }
                         tr.appendChild(tdStatus);
                         
@@ -503,7 +609,7 @@
                     // Add total row if it exists
                     if (totalData) {
                         const trTotal = document.createElement('tr');
-                        trTotal.className = 'table-active fw-bold';
+                        trTotal.className = 'fw-bold';
                         
                         // Category name
                         const tdCategory = document.createElement('td');
@@ -523,9 +629,9 @@
                         // Status
                         const tdStatus = document.createElement('td');
                         if (totalData.possible_overshoot) {
-                            tdStatus.innerHTML = '<span class="badge bg-danger">Overshoot Risk</span>';
+                            tdStatus.innerHTML = '<span class="badge badge-error">Overshoot Risk</span>';
                         } else {
-                            tdStatus.innerHTML = '<span class="badge bg-success">On Track</span>';
+                            tdStatus.innerHTML = '<span class="badge badge-success">On Track</span>';
                         }
                         trTotal.appendChild(tdStatus);
                         
@@ -546,7 +652,7 @@
                         const td = document.createElement('td');
                         td.colSpan = 4;
                         td.textContent = 'No unusual transactions detected';
-                        td.className = 'text-center';
+                        td.className = 'text-center py-3';
                         tr.appendChild(td);
                         tbody.appendChild(tr);
                         return;
@@ -562,8 +668,8 @@
                         
                         // Description
                         const tdDesc = document.createElement('td');
-                        tdDesc.textContent = anomaly.description.length > 30 ? 
-                            anomaly.description.substring(0, 30) + '...' : 
+                        tdDesc.textContent = anomaly.description.length > 20 ? 
+                            anomaly.description.substring(0, 20) + '...' : 
                             anomaly.description;
                         tdDesc.title = anomaly.description; // Show full text on hover
                         tr.appendChild(tdDesc);
@@ -595,7 +701,7 @@
                         const td = document.createElement('td');
                         td.colSpan = 4;
                         td.textContent = 'No recurring transactions detected';
-                        td.className = 'text-center';
+                        td.className = 'text-center py-3';
                         tr.appendChild(td);
                         tbody.appendChild(tr);
                         return;
@@ -615,8 +721,8 @@
                         
                         // Description
                         const tdDesc = document.createElement('td');
-                        tdDesc.textContent = transaction.description.length > 30 ? 
-                            transaction.description.substring(0, 30) + '...' : 
+                        tdDesc.textContent = transaction.description.length > 20 ? 
+                            transaction.description.substring(0, 20) + '...' : 
                             transaction.description;
                         tdDesc.title = transaction.description; // Show full text on hover
                         tr.appendChild(tdDesc);
@@ -640,7 +746,13 @@
                     });
                 })
                 .catch(error => console.error('Error loading recurring transactions:', error));
+                
+            // Chatbot button
+            document.querySelector('.chatbot-button').addEventListener('click', function() {
+                alert('AI Chatbot feature coming soon!');
+            });
         });
     </script>
 </body>
 </html>
+

@@ -7,7 +7,7 @@ from reportlab.lib.units import inch
 from io import BytesIO
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+matplotlib.use('Agg')
 import numpy as np
 import os
 import base64
@@ -15,7 +15,6 @@ from datetime import datetime
 
 class ReportGenerator:
     def __init__(self, analyzer, user_name):
-        """Initialize with a FinancialAnalyzer instance and user name"""
         self.analyzer = analyzer
         self.user_name = user_name
         self.styles = getSampleStyleSheet()
@@ -36,21 +35,17 @@ class ReportGenerator:
         self.normal_style = self.styles['Normal']
     
     def generate_pdf(self, output_path):
-        """Generate a PDF report of financial analysis"""
         doc = SimpleDocTemplate(output_path, pagesize=letter)
         elements = []
         
-        # Title
         title = Paragraph(f"Financial Analysis Report for {self.user_name}", self.title_style)
         elements.append(title)
         elements.append(Spacer(1, 12))
         
-        # Generate report date
         report_date = Paragraph(f"Report generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", self.normal_style)
         elements.append(report_date)
         elements.append(Spacer(1, 24))
         
-        # Basic stats
         elements.append(Paragraph("Financial Summary", self.heading2_style))
         stats = self.analyzer.get_basic_stats()
         stats_data = [
@@ -76,17 +71,14 @@ class ReportGenerator:
         elements.append(stats_table)
         elements.append(Spacer(1, 24))
         
-        # Category breakdown
         elements.append(Paragraph("Spending by Category", self.heading2_style))
         categories = self.analyzer.get_category_breakdown()
         
         if categories:
-            # Create a pie chart
             pie_img = self._create_category_pie_chart(categories)
             elements.append(pie_img)
             elements.append(Spacer(1, 12))
             
-            # Create a table of category spending
             cat_data = [["Category", "Amount"]]
             for cat in categories:
                 cat_data.append([cat['category'].capitalize(), f"₹{cat['amount']:,.2f}"])
@@ -113,7 +105,7 @@ class ReportGenerator:
         monthly_data = self.analyzer.get_monthly_breakdown()
         
         if monthly_data:
-            # Create a line chart of monthly spending
+            # line chart of monthly spending
             monthly_img = self._create_monthly_chart(monthly_data)
             elements.append(monthly_img)
             elements.append(Spacer(1, 24))
@@ -121,7 +113,6 @@ class ReportGenerator:
             elements.append(Paragraph("No monthly data available", self.normal_style))
             elements.append(Spacer(1, 24))
         
-        # Anomalies
         elements.append(Paragraph("Unusual Transactions", self.heading2_style))
         anomalies = self.analyzer.detect_anomalies()
         
@@ -152,12 +143,10 @@ class ReportGenerator:
         
         elements.append(Spacer(1, 24))
         
-        # Future projections
         elements.append(Paragraph("Monthly Spending Projection", self.heading2_style))
         projections = self.analyzer.project_monthly_spending()
         
         if projections:
-            # Filter out the 'total' key for the table
             category_projections = {k: v for k, v in projections.items() if k != 'total'}
             
             if category_projections:
@@ -172,7 +161,6 @@ class ReportGenerator:
                         "Yes" if data['possible_overshoot'] else "No"
                     ])
                 
-                # Add total row
                 total = projections.get('total', {})
                 proj_data.append([
                     "TOTAL",
@@ -201,7 +189,6 @@ class ReportGenerator:
         else:
             elements.append(Paragraph("No projection data available", self.normal_style))
         
-        # Build the PDF
         doc.build(elements)
         return output_path
     
@@ -212,7 +199,6 @@ class ReportGenerator:
         labels = [cat['category'].capitalize() for cat in categories]
         sizes = [cat['amount'] for cat in categories]
         
-        # Limit to top 6 categories for readability, group the rest as "Other"
         if len(labels) > 6:
             labels = labels[:5] + ["Other"]
             sizes = sizes[:5] + [sum(sizes[5:])]
@@ -244,7 +230,6 @@ class ReportGenerator:
         plt.xticks(rotation=45)
         plt.tight_layout()
         
-        # Save figure to a BytesIO object
         buffer = BytesIO()
         plt.savefig(buffer, format='png')
         plt.close()

@@ -9,7 +9,6 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-# Download NLTK resources if not already downloaded
 try:
     nltk.data.find('tokenizers/punkt')
     nltk.data.find('corpora/stopwords')
@@ -24,8 +23,7 @@ class TransactionCategorizer:
             'entertainment', 'health', 'education', 'travel', 
             'housing', 'income', 'investment', 'bills', 'other'
         ]
-        
-        # Rule-based categorization patterns
+        #rule based
         self.rules = {
             'food': [
                 r'swiggy', r'zomato', r'uber eats', r'dominos', r'pizza', 
@@ -85,12 +83,10 @@ class TransactionCategorizer:
             ]
         }
         
-        # Initialize ML model
         self.vectorizer = None
         self.model = None
         self.model_ready = False
         
-        # Try to load pre-trained model if exists
         self._load_model()
     
     def _preprocess_text(self, text):
@@ -98,13 +94,10 @@ class TransactionCategorizer:
         if not text:
             return ""
         
-        # Convert to lowercase
         text = text.lower()
         
-        # Remove special characters and numbers
         text = re.sub(r'[^a-zA-Z\s]', ' ', text)
         
-        # Tokenize and remove stopwords
         stop_words = set(stopwords.words('english'))
         tokens = word_tokenize(text)
         filtered_tokens = [w for w in tokens if w not in stop_words]
@@ -123,20 +116,17 @@ class TransactionCategorizer:
                 if re.search(pattern, description):
                     return category
         
-        return None  # No rule matched
+        return None
     
     def _ml_based_categorize(self, description):
         """Categorize transaction using ML model"""
         if not self.model_ready or not description:
             return 'other'
         
-        # Preprocess the description
         processed_desc = self._preprocess_text(description)
         
-        # Vectorize the text
         X = self.vectorizer.transform([processed_desc])
         
-        # Predict the category
         prediction = self.model.predict(X)
         
         return prediction[0]
@@ -146,23 +136,19 @@ class TransactionCategorizer:
         Categorize a transaction using rule-based approach first,
         falling back to ML-based approach if no rule matches
         """
-        # Try rule-based categorization first
         category = self._rule_based_categorize(transaction.description)
         
-        # If no rule matched and ML model is ready, use ML-based categorization
         if category is None and self.model_ready:
             category = self._ml_based_categorize(transaction.description)
         elif category is None:
-            category = 'other'  # Default category if no rule matched and ML model is not ready
+            category = 'other'
         
-        # Set the category in the transaction object
         transaction.category = category
         return transaction
     
     def _load_model(self):
         """Load pre-trained model if exists"""
         try:
-            # Check if model files exist
             if os.path.exists('vectorizer.pkl') and os.path.exists('model.pkl'):
                 with open('vectorizer.pkl', 'rb') as f:
                     self.vectorizer = pickle.load(f)
@@ -185,7 +171,6 @@ class TransactionCategorizer:
             if transaction.description:
                 descriptions.append(transaction.description)
                 
-                # If labels are provided, use them, otherwise use rule-based categorization
                 if labels and transaction.id in labels:
                     categories.append(labels[transaction.id])
                 else:
@@ -194,32 +179,26 @@ class TransactionCategorizer:
                         category = 'other'
                     categories.append(category)
         
-        if len(descriptions) < 20:  # Need minimum data to train
+        if len(descriptions) < 20: 
             print("Not enough data to train the model")
             return False
         
-        # Preprocess descriptions
         processed_descriptions = [self._preprocess_text(desc) for desc in descriptions]
         
-        # Split into training and testing sets
         X_train, X_test, y_train, y_test = train_test_split(
             processed_descriptions, categories, test_size=0.2, random_state=42
         )
         
-        # Initialize and fit TF-IDF vectorizer
         self.vectorizer = TfidfVectorizer(max_features=5000)
         X_train_tfidf = self.vectorizer.fit_transform(X_train)
         X_test_tfidf = self.vectorizer.transform(X_test)
         
-        # Initialize and train Random Forest Classifier
         self.model = RandomForestClassifier(n_estimators=100, random_state=42)
         self.model.fit(X_train_tfidf, y_train)
         
-        # Evaluate model
         accuracy = self.model.score(X_test_tfidf, y_test)
         print(f"Model trained successfully with accuracy: {accuracy:.2f}")
         
-        # Save the model and vectorizer
         with open('vectorizer.pkl', 'wb') as f:
             pickle.dump(self.vectorizer, f)
         with open('model.pkl', 'wb') as f:

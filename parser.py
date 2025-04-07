@@ -223,7 +223,6 @@ class StatementParser:
             # For CSV, use pandas to parse
             df = pd.read_csv(StringIO(content))
             
-            # Rename columns to handle different possible column names
             if 'Tran Date' in df.columns:
                 df = df.rename(columns={'Tran Date': 'Date'})
             if 'Dr Amount' in df.columns:
@@ -240,7 +239,6 @@ class StatementParser:
                 except ValueError:
                     date = datetime.datetime.strptime(row['Date'], '%d/%m/%Y').strftime('%Y-%m-%d')
                 
-                # Determine if it's a debit or credit transaction
                 debit = float(row['Debit']) if pd.notna(row['Debit']) and row['Debit'] != '' else 0.0
                 credit = float(row['Credit']) if pd.notna(row['Credit']) and row['Credit'] != '' else 0.0
                 

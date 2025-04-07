@@ -28,14 +28,12 @@ class FinancialAnalyzer:
         
         df = pd.DataFrame(data)
         
-        # Convert date strings to datetime objects
         if not df.empty:
             df['date'] = pd.to_datetime(df['date'])
             df['month'] = df['date'].dt.strftime('%Y-%m')
             df['week'] = df['date'].dt.strftime('%Y-%W')
             df['day'] = df['date'].dt.day
             
-            # Separate debits and credits
             df['debit'] = df.apply(lambda row: row['amount'] if row['type'] == 'debit' else 0, axis=1)
             df['credit'] = df.apply(lambda row: row['amount'] if row['type'] == 'credit' else 0, axis=1)
         
@@ -65,7 +63,6 @@ class FinancialAnalyzer:
         if self.df.empty:
             return []
         
-        # Focus on debit transactions (spending)
         debits_df = self.df[self.df['type'] == 'debit']
         
         if debits_df.empty:
@@ -90,17 +87,14 @@ class FinancialAnalyzer:
         
         monthly_data = []
         
-        # Group by month and category
         monthly_category = self.df.groupby(['month', 'category']).agg({
             'debit': 'sum',
             'credit': 'sum'
         }).reset_index()
         
-        # Get unique months and categories
         months = sorted(monthly_category['month'].unique())
         categories = sorted(monthly_category['category'].unique())
         
-        # Prepare data for each month
         for month in months:
             month_data = {
                 'month': month,
@@ -113,7 +107,6 @@ class FinancialAnalyzer:
                 'categories': {}
             }
             
-            # Add category breakdown for this month
             for category in categories:
                 filtered = monthly_category[
                     (monthly_category['month'] == month) & 
@@ -135,7 +128,6 @@ class FinancialAnalyzer:
         if self.df.empty:
             return []
         
-        # Prepare daily spending data
         daily_spent = self.df[self.df['type'] == 'debit'].groupby(self.df['date'].dt.date)['amount'].sum()
         
         result = []
@@ -152,26 +144,20 @@ class FinancialAnalyzer:
         if self.df.empty:
             return []
         
-        # Group by description and amount
         grouped = self.df.groupby(['description', 'amount'])
         
-        # Identify potential recurring transactions
         recurring_ids = []
         
         for (desc, amount), group in grouped:
             if len(group) >= min_occurrences:
-                # Sort by date
                 sorted_group = group.sort_values('date')
                 
-                # Check for regular intervals
                 dates = sorted_group['date'].tolist()
                 is_recurring = False
                 
                 for i in range(len(dates) - 1):
-                    # Calculate days between consecutive transactions
                     days_diff = (dates[i+1] - dates[i]).days
                     
-                    # If within the time window, consider as recurring
                     if days_diff <= time_window_days:
                         is_recurring = True
                         break
@@ -179,15 +165,12 @@ class FinancialAnalyzer:
                 if is_recurring:
                     recurring_ids.extend(sorted_group['id'].tolist())
         
-        # Update is_recurring flag in the dataframe
         self.df.loc[self.df['id'].isin(recurring_ids), 'is_recurring'] = True
         
-        # Update original transactions
         for transaction in self.transactions:
             if transaction.id in recurring_ids:
                 transaction.is_recurring = True
         
-        # Return updated transactions
         return self.transactions
     
     def detect_anomalies(self, z_threshold=2.0):
@@ -197,14 +180,12 @@ class FinancialAnalyzer:
         
         anomalies = []
         
-        # Group by category
         for category in self.df['category'].unique():
             category_df = self.df[self.df['category'] == category]
             
             if len(category_df) <= 1:
                 continue
             
-            # Calculate Z-score for amounts within each category
             mean = category_df['amount'].mean()
             std = category_df['amount'].std()
             
@@ -231,34 +212,27 @@ class FinancialAnalyzer:
         if self.df.empty:
             return {}
         
-        # Get the current date/time
         today = datetime.now()
         
-        # Calculate days in month and days remaining
         days_in_month = (datetime(today.year, today.month + 1 if today.month < 12 else 1, 1) - 
                         datetime(today.year, today.month, 1)).days
         days_elapsed = today.day
         days_remaining = days_in_month - days_elapsed
         
-        # Get current month's spending so far
         current_month = today.strftime('%Y-%m')
         curr_month_df = self.df[(self.df['month'] == current_month) & (self.df['type'] == 'debit')]
         
         if curr_month_df.empty:
             return {}
         
-        # Calculate projection by category
         projections = {}
         
-        # Group by category
         category_spent = curr_month_df.groupby('category')['amount'].sum()
         
         for category, amount in category_spent.items():
-            # Simple linear projection based on daily average
             daily_avg = amount / days_elapsed
             projected_amount = amount + (daily_avg * days_remaining)
             
-            # Get previous month's spending for this category (if available)
             prev_month = (today - timedelta(days=30)).strftime('%Y-%m')
             prev_month_spent = 0
             
@@ -271,21 +245,18 @@ class FinancialAnalyzer:
             if not prev_df.empty:
                 prev_month_spent = prev_df['amount'].sum()
             
-            # Determine if category might overshoot - convert to string instead of boolean
             is_overshoot = projected_amount > (prev_month_spent * 1.2) if prev_month_spent > 0 else False
             
             projections[category] = {
                 'current_spent': round(amount, 2),
                 'projected_amount': round(projected_amount, 2),
                 'previous_month': round(prev_month_spent, 2),
-                'possible_overshoot': int(is_overshoot)  # Convert boolean to integer (0 or 1)
+                'possible_overshoot': int(is_overshoot) 
             }
         
-        # Add overall projection
         total_spent = category_spent.sum()
         total_projected = total_spent / days_elapsed * days_in_month
         
-        # Get previous month's total spending
         prev_month = (today - timedelta(days=30)).strftime('%Y-%m')
         prev_month_total = self.df[
             (self.df['month'] == prev_month) & 

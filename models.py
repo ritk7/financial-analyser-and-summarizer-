@@ -4,7 +4,6 @@ import sqlite3
 import datetime
 import json
 
-# User class for authentication
 class User(UserMixin):
     def __init__(self, id, name, username, email, password_hash):
         self.id = id
@@ -64,7 +63,7 @@ class Transaction:
         self.date = date
         self.description = description
         self.amount = amount
-        self.transaction_type = transaction_type  # 'debit' or 'credit'
+        self.transaction_type = transaction_type  # debit or credit
         self.category = category
         self.is_recurring = is_recurring
         self.bank = bank
@@ -75,7 +74,6 @@ class Transaction:
         cursor = conn.cursor()
         
         for transaction in transactions:
-            # Convert date to string if it's a datetime object
             date_str = transaction.date
             if isinstance(transaction.date, datetime.datetime):
                 date_str = transaction.date.strftime('%Y-%m-%d')
@@ -146,12 +144,10 @@ class Transaction:
         conn.commit()
         conn.close()
 
-# Initialize the database tables
 def init_db():
     conn = sqlite3.connect('financial_analyzer.db')
     cursor = conn.cursor()
     
-    # Create users table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -161,8 +157,7 @@ def init_db():
         password_hash TEXT NOT NULL
     )
     ''')
-    
-    # Create transactions table
+
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

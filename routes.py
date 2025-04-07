@@ -15,15 +15,12 @@ from report import ReportGenerator
 from config import Config
 
 def init_routes(app):
-    # Get the login_manager from the app
     login_manager = app.login_manager
     
-    # Register the user loader callback with LoginManager
     @login_manager.user_loader
     def load_user(user_id):
         return User.get_by_id(int(user_id))
     
-    # Ensure the upload folder exists
     os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
     
     # @app.route('/')
@@ -95,7 +92,6 @@ def init_routes(app):
     @login_required
     def upload():
         if request.method == 'POST':
-            # Check if file part exists
             if 'file' not in request.files:
                 flash('No file part')
                 return redirect(request.url)
@@ -103,46 +99,36 @@ def init_routes(app):
             file = request.files['file']
             bank = request.form.get('bank')
             
-            # Check if user selected a file
             if file.filename == '':
                 flash('No selected file')
                 return redirect(request.url)
             
-            # Check if bank is selected
             if not bank:
                 flash('Please select a bank')
                 return redirect(request.url)
             
-            # Check if file type is allowed
             if not (file.filename.endswith('.pdf') or file.filename.endswith('.csv')):
                 flash('Only PDF and CSV files are allowed')
                 return redirect(request.url)
             
-            # Save the file
             filename = secure_filename(file.filename)
             file_path = os.path.join(Config.UPLOAD_FOLDER, filename)
             file.save(file_path)
             
             try:
-                # Debug message
                 print(f"Processing file: {file_path}")
                 print(f"Selected bank: {bank}")
                 
-                # Parse the statement
                 parser = StatementParser()
                 transactions = parser.parse(file_path, bank, current_user.id)
                 
-                # Debug message
                 print(f"Parsed {len(transactions)} transactions")
                 
-                # Categorize transactions
                 categorizer = TransactionCategorizer()
                 categorized_transactions = categorizer.bulk_categorize(transactions)
                 
-                # Debug message
                 print(f"Categorized {len(categorized_transactions)} transactions")
                 
-                # Save transactions to the database
                 Transaction.save_transactions(categorized_transactions, current_user.id)
                 
                 flash(f"Successfully processed {len(transactions)} transactions")
@@ -156,7 +142,6 @@ def init_routes(app):
                 flash(f"Error processing file: {str(e)}")
                 return redirect(request.url)
             finally:
-                # Clean up the uploaded file
                 if os.path.exists(file_path):
                     os.remove(file_path)
         
@@ -166,10 +151,8 @@ def init_routes(app):
     @app.route('/api/stats')
     @login_required
     def get_stats():
-        # Get all transactions for the current user
         transactions = Transaction.get_user_transactions(current_user.id)
         
-        # Analyze transactions
         analyzer = FinancialAnalyzer(transactions)
         stats = analyzer.get_basic_stats()
         
@@ -178,10 +161,8 @@ def init_routes(app):
     @app.route('/api/categories')
     @login_required
     def get_categories():
-        # Get all transactions for the current user
         transactions = Transaction.get_user_transactions(current_user.id)
         
-        # Analyze transactions
         analyzer = FinancialAnalyzer(transactions)
         categories = analyzer.get_category_breakdown()
         
@@ -190,10 +171,8 @@ def init_routes(app):
     @app.route('/api/monthly')
     @login_required
     def get_monthly():
-        # Get all transactions for the current user
         transactions = Transaction.get_user_transactions(current_user.id)
         
-        # Analyze transactions
         analyzer = FinancialAnalyzer(transactions)
         monthly = analyzer.get_monthly_breakdown()
         
@@ -203,17 +182,13 @@ def init_routes(app):
     @login_required
     def get_heatmap():
         try:
-            # Get all transactions for the current user
             transactions = Transaction.get_user_transactions(current_user.id)
             
-            # Log the number of transactions
             print(f"Retrieved {len(transactions)} transactions for heatmap")
             
-            # Analyze transactions
             analyzer = FinancialAnalyzer(transactions)
             heatmap = analyzer.get_daily_heatmap()
             
-            # Log the heatmap data
             print(f"Generated heatmap with {len(heatmap)} data points")
             
             return jsonify(heatmap)
@@ -224,10 +199,8 @@ def init_routes(app):
     @app.route('/api/anomalies')
     @login_required
     def get_anomalies():
-        # Get all transactions for the current user
         transactions = Transaction.get_user_transactions(current_user.id)
         
-        # Analyze transactions
         analyzer = FinancialAnalyzer(transactions)
         anomalies = analyzer.detect_anomalies()
         
@@ -236,10 +209,8 @@ def init_routes(app):
     @app.route('/api/projections')
     @login_required
     def get_projections():
-        # Get all transactions for the current user
         transactions = Transaction.get_user_transactions(current_user.id)
         
-        # Analyze transactions
         analyzer = FinancialAnalyzer(transactions)
         projections = analyzer.project_monthly_spending()
         
@@ -248,16 +219,13 @@ def init_routes(app):
     @app.route('/api/recurring')
     @login_required
     def get_recurring():
-        # Get all transactions for the current user
         transactions = Transaction.get_user_transactions(current_user.id)
         
-        # Analyze transactions
         analyzer = FinancialAnalyzer(transactions)
         recurring = analyzer.identify_recurring_transactions()
         
-        # Convert to JSON-serializable format
         recurring_data = []
-        if recurring:  # Add check to ensure recurring is not None
+        if recurring:
             for transaction in recurring:
                 if transaction.is_recurring:
                     recurring_data.append({
@@ -289,13 +257,10 @@ def init_routes(app):
     @app.route('/report')
     @login_required
     def generate_report():
-        # Get all transactions for the current user
         transactions = Transaction.get_user_transactions(current_user.id)
         
-        # Analyze transactions
         analyzer = FinancialAnalyzer(transactions)
         
-        # Generate report
         report_gen = ReportGenerator(analyzer, current_user.username)
         report_path = os.path.join(Config.UPLOAD_FOLDER, f"financial_report_{current_user.id}.pdf")
         

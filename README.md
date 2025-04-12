@@ -1,8 +1,10 @@
-# Tech Solstice 2025 – Finance Tracker & Analyzer
+# Finance Tracker & Analyzer
 
 This application is an intelligent personal finance assistant that assists you in **tracking**, **analyzing**, and **making sense** of your expenditure patterns with the assistance of **NLP**, **machine learning**, and a **multilingual voice-activated chatbot**.
 
 Give it your bank statements, and it'll tell you exactly where your money went—beautifully visualized and intelligently summarized.
+
+🛠️ This project was built as a submission for Tech Solstice 2025.
 
 ## Features
 

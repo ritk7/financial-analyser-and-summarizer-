@@ -16,7 +16,7 @@ Give it your bank statements, and it'll tell you exactly where your money went�
   View your monthly spending trends, and receive a heatmap of daily spends.
 
 - **Detect Unusual & Recurrent Transactions**
-Identify outliers, recurring payments, and subscription-based spending.
+  Identify outliers, recurring payments, and recurrent spending habits.
 
 -  **Multilingual Chatbot (with Voice Support)**  
   Talk to your finance assistant in Hindi, Telugu, Kannada, and more—available in text or voice form.
@@ -26,7 +26,7 @@ Identify outliers, recurring payments, and subscription-based spending.
 
 ---
 
-## ????️ Installation
+## Installation
 
 Clone this repo and install the dependencies:
 
